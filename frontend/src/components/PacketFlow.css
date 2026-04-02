@@ -1,0 +1,171 @@
+/* ─── PacketFlow Component Styles ─── */
+
+.flow-container {
+  margin: 24px 0;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 16px;
+  padding: 20px 24px;
+  backdrop-filter: blur(8px);
+}
+
+.flow-title {
+  color: #38bdf8;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 20px;
+  letter-spacing: 0.03em;
+}
+
+/* ── Lane: Sender ── track ── Receiver ── */
+.flow-lane {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.flow-endpoint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ep-icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4));
+}
+
+.ep-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Track (the channel between Sender and Receiver) ── */
+.flow-track {
+  flex: 1;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Dashed pipe connecting sender to receiver */
+.pipe-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 0.25) 0,
+    rgba(56, 189, 248, 0.25) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* ── Packet grid ── */
+.packet-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Individual packet chip */
+.packet-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: chipAppear 0.25s ease both;
+}
+
+.packet-chip:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes chipAppear {
+  from { opacity: 0; transform: scale(0.75) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.chip-seq {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.chip-icon {
+  font-size: 0.85rem;
+}
+
+/* ── Status colours ── */
+.status-sent {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+}
+
+.status-received {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #86efac;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+}
+
+.status-lost {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+.status-retransmit {
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  color: #fdba74;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);
+  animation: chipAppear 0.25s ease both, pulse 1s ease 0.25s;
+}
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);  }
+  50%  { box-shadow: 0 0 18px rgba(249, 115, 22, 0.6); }
+  100% { box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);  }
+}
+
+/* ── Legend ── */
+.flow-legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.legend-item.sent      { color: #93c5fd; }
+.legend-item.received  { color: #86efac; }
+.legend-item.lost      { color: #fca5a5; }
+.legend-item.retransmit { color: #fdba74; }
