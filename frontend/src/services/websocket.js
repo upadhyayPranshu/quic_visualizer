@@ -8,7 +8,7 @@
  * - Calls onStatusChange('connected'|'disconnected'|'reconnecting') for UI status
  */
 
-const WS_URL = process.env.REACT_APP_WS_URL || "ws://127.0.0.1:8000/ws";
+const WS_URL = process.env.REACT_APP_WS_URL || "wss://quicvisualizer-production.up.railway.app/ws";
 const INITIAL_RETRY_DELAY = 1000;  // ms
 const MAX_RETRY_DELAY = 10000;     // ms
 
