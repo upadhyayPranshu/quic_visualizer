@@ -1,2 +1,0 @@
-[start]
-cmd = "cd backend && python run.py"

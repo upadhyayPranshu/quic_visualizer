@@ -2,12 +2,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from app.websocket import manager
 import asyncio
-from app.protocol.udp_server import start_server
-from app.protocol.udp_client import start_client
+import traceback
 
 app = FastAPI(title="QUIC Visualizer API", version="1.0.0")
 
-# Allow the React dev server to connect
+# Allow the React dev server and Netlify frontend to connect
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,18 +17,30 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    # Start server FIRST (binds to port 9999), then client after a short delay
-    asyncio.create_task(start_server())
-    await asyncio.sleep(0.2)          # Give the server time to bind
-    asyncio.create_task(start_client())
-    print("[MAIN] Simulation tasks started")
+    """Start internal UDP simulation tasks with error handling.
+    If UDP sockets fail (e.g. on Railway), the WebSocket API still works."""
+    try:
+        from app.protocol.udp_server import start_server
+        from app.protocol.udp_client import start_client
+        asyncio.create_task(start_server())
+        await asyncio.sleep(0.2)
+        asyncio.create_task(start_client())
+        print("[MAIN] Simulation tasks started")
+    except Exception as e:
+        print(f"[MAIN] WARNING: UDP simulation failed to start: {e}")
+        traceback.print_exc()
+        print("[MAIN] WebSocket API is still available")
 
 @app.get("/")
 def home():
     return {
+        "status": "ok",
         "message": "QUIC Visualizer Backend Running",
-        "websocket": "ws://127.0.0.1:8000/ws",
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
