@@ -3,14 +3,7 @@ import "./PacketFlow.css";
 
 /**
  * PacketFlow — shows a pipeline of packets travelling from Sender to Receiver.
- *
- * Fixes:
- * 1. Uses p.seq as the React key (not array index) so existing nodes update
- *    in-place rather than re-mounting and re-triggering the animation.
- * 2. Each packet is positioned in a staggered grid so they're never stacked.
- * 3. Only packets with status "sent" / "retransmit" play the travel animation;
- *    "received" and "lost" snap to their final positions immediately.
- * 4. Packet count is capped so the lane never overflows.
+ * Includes checksum verification indicator on each packet.
  */
 
 const STATUS_LABELS = {
@@ -41,11 +34,14 @@ function PacketFlow({ packets }) {
             {packets.map((p) => (
               <div
                 key={p.seq}
-                className={`packet-chip status-${p.status}`}
-                title={`Seq #${p.seq} — ${p.status}`}
+                className={`packet-chip status-${p.status}${p.checksum_ok === false ? " checksum-fail" : ""}`}
+                title={`Seq #${p.seq} — ${p.status}${p.checksum_ok === false ? " [CHECKSUM FAIL]" : " [CRC32 ✓]"}${p.protocol ? ` (${p.protocol})` : ""}`}
               >
                 <span className="chip-seq">{p.seq}</span>
                 <span className="chip-icon">{STATUS_LABELS[p.status] ?? "?"}</span>
+                {p.checksum_ok === false && (
+                  <span className="chip-checksum-fail" title="Checksum Error">⚠</span>
+                )}
               </div>
             ))}
           </div>
@@ -63,6 +59,7 @@ function PacketFlow({ packets }) {
         <span className="legend-item received">● Received</span>
         <span className="legend-item lost">● Lost</span>
         <span className="legend-item retransmit">● Retransmit</span>
+        <span className="legend-item checksum">⚠ Checksum Fail</span>
       </div>
     </div>
   );

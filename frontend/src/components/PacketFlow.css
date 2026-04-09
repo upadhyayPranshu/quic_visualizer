@@ -169,3 +169,23 @@
 .legend-item.received  { color: #86efac; }
 .legend-item.lost      { color: #fca5a5; }
 .legend-item.retransmit { color: #fdba74; }
+.legend-item.checksum  { color: #fbbf24; }
+
+/* ── Checksum fail overlay ── */
+.checksum-fail {
+  border-style: dashed !important;
+  border-color: #fbbf24 !important;
+  position: relative;
+}
+
+.chip-checksum-fail {
+  font-size: 0.7rem;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
+  animation: checksumPulse 0.8s ease infinite;
+}
+
+@keyframes checksumPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}

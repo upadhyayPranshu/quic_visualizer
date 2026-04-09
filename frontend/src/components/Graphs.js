@@ -9,13 +9,7 @@ import {
 } from "recharts";
 
 /**
- * Graphs — Live time-series charts for RTT, Congestion Window, and Throughput.
- *
- * Fixes:
- * - dot={false} prevents thousands of dots causing performance issues
- * - isAnimationActive={false} prevents the chart morphing every update
- * - Custom Tooltip formatter for readable values
- * - Proper axis domains so charts don't go flat at tiny values
+ * Graphs — Live time-series charts for RTT, Congestion Window, Throughput, and Loss Rate.
  */
 
 const CHART_HEIGHT = 220;
@@ -104,6 +98,14 @@ function Graphs({ metrics }) {
         dataKey="throughput"
         color="#38bdf8"
         unit=" pkt/s"
+        yMin={0}
+      />
+      <GraphCard
+        title="Packet Loss Rate"
+        data={metrics}
+        dataKey="loss_rate"
+        color="#f87171"
+        unit="%"
         yMin={0}
       />
     </div>

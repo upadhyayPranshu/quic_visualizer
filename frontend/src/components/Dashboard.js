@@ -6,6 +6,7 @@ import Controls from "./Controls";
 
 const MAX_PACKETS = 24;   // Number of packets to show in the flow lane
 const MAX_METRICS = 60;   // Number of data-points to keep in graphs
+const MAX_LOGS = 80;      // Max log entries to keep
 
 function Dashboard() {
   // Ordered list of packets shown in the flow lane
@@ -13,6 +14,9 @@ function Dashboard() {
 
   // Time-series data for graphs
   const [metrics, setMetrics] = useState([]);
+
+  // Transmission logs
+  const [logs, setLogs] = useState([]);
 
   // Live summary counters
   const [summary, setSummary] = useState({
@@ -24,6 +28,9 @@ function Dashboard() {
     total_lost: 0,
     total_retransmits: 0,
     loss_rate: 0,
+    window_size: 16,
+    timeout: 1.0,
+    protocol_mode: "selective_repeat",
   });
 
   // WebSocket status: 'connected' | 'disconnected' | 'reconnecting'
@@ -33,20 +40,31 @@ function Dashboard() {
   const sendMessageRef = useRef(null);
 
   // ── Packet state updater ──────────────────────────────────────────────────
-  // We use a Map keyed by seq so lookups are O(1) instead of O(n) array scans.
   const packetMapRef = useRef(new Map());
 
-  const updatePacketStatus = useCallback((seq, status) => {
-    packetMapRef.current.set(seq, status);
+  const updatePacketStatus = useCallback((seq, status, extra = {}) => {
+    packetMapRef.current.set(seq, { status, ...extra });
 
     setPackets(() => {
-      // Rebuild ordered array from the map (newest at end)
       const entries = Array.from(packetMapRef.current.entries());
-      // Keep only the last MAX_PACKETS
       const trimmed = entries.slice(-MAX_PACKETS);
-      return trimmed.map(([s, st]) => ({ seq: s, status: st }));
+      return trimmed.map(([s, info]) => ({
+        seq: s,
+        status: info.status,
+        checksum_ok: info.checksum_ok !== undefined ? info.checksum_ok : true,
+        protocol: info.protocol || "",
+      }));
     });
   }, []);
+
+  // Log ref for auto-scroll
+  const logEndRef = useRef(null);
+
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollTop = logEndRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   // ── WebSocket connection ──────────────────────────────────────────────────
   useEffect(() => {
@@ -55,19 +73,29 @@ function Dashboard() {
       (data) => {
         switch (data.type) {
           case "send":
-            updatePacketStatus(data.seq, "sent");
+            updatePacketStatus(data.seq, "sent", {
+              checksum_ok: data.checksum_ok,
+            });
             break;
 
           case "receive":
-            updatePacketStatus(data.seq, "received");
+            updatePacketStatus(data.seq, "received", {
+              checksum_ok: data.checksum_ok,
+            });
             break;
 
           case "loss":
-            updatePacketStatus(data.seq, "lost");
+            updatePacketStatus(data.seq, "lost", {
+              checksum_ok: data.checksum_ok,
+              reason: data.reason,
+            });
             break;
 
           case "retransmit":
-            updatePacketStatus(data.seq, "retransmit");
+            updatePacketStatus(data.seq, "retransmit", {
+              checksum_ok: data.checksum_ok,
+              protocol: data.protocol,
+            });
             break;
 
           case "metrics":
@@ -80,6 +108,9 @@ function Dashboard() {
               total_lost: data.total_lost ?? 0,
               total_retransmits: data.total_retransmits ?? 0,
               loss_rate: data.loss_rate ?? 0,
+              window_size: data.window_size ?? 16,
+              timeout: data.timeout ?? 1.0,
+              protocol_mode: data.protocol_mode ?? "selective_repeat",
             });
             setMetrics((prev) => [
               ...prev.slice(-(MAX_METRICS - 1)),
@@ -88,12 +119,28 @@ function Dashboard() {
                 rtt: data.rtt ?? 0,
                 cwnd: data.cwnd ?? 0,
                 throughput: data.throughput ?? 0,
+                loss_rate: (data.loss_rate ?? 0) * 100,
               },
             ]);
             break;
 
+          case "log":
+            setLogs((prev) => [
+              ...prev.slice(-(MAX_LOGS - 1)),
+              {
+                time: data.timestamp
+                  ? new Date(data.timestamp * 1000).toLocaleTimeString()
+                  : new Date().toLocaleTimeString(),
+                message: data.message,
+              },
+            ]);
+            break;
+
+          case "config":
+            // Initial config from server
+            break;
+
           case "control_ack":
-            // Server confirmed the control update — no UI action needed
             break;
 
           default:
@@ -109,7 +156,7 @@ function Dashboard() {
     return () => disconnect();
   }, [updatePacketStatus]);
 
-  // ── Control message sender (passed down to Controls) ─────────────────────
+  // ── Control message sender ───────────────────────────────────────────────
   const handleControl = useCallback((payload) => {
     if (sendMessageRef.current) {
       sendMessageRef.current({ type: "control", ...payload });
@@ -123,10 +170,20 @@ function Dashboard() {
     reconnecting: "#f59e0b",
   }[wsStatus];
 
+  const protocolLabel = summary.protocol_mode === "go_back_n"
+    ? "Go-Back-N"
+    : "Selective Repeat";
+
   return (
     <div className="container">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="dashboard-header">
+        <div className="header-info">
+          <span className="protocol-badge">{protocolLabel}</span>
+          <span className="config-info">
+            Window: {summary.window_size} · Timeout: {summary.timeout.toFixed(1)}s
+          </span>
+        </div>
         <div className="status-badge" style={{ "--badge-color": statusColor }}>
           <span className="status-dot" />
           {wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)}
@@ -153,6 +210,23 @@ function Dashboard() {
 
       {/* ── Graphs ─────────────────────────────────────────── */}
       <Graphs metrics={metrics} />
+
+      {/* ── Transmission Log ────────────────────────────────── */}
+      <div className="log-panel">
+        <h3 className="log-title">📋 Transmission Log</h3>
+        <div className="log-scroll" ref={logEndRef}>
+          {logs.length === 0 ? (
+            <div className="log-empty">Waiting for transmission events...</div>
+          ) : (
+            logs.map((entry, i) => (
+              <div key={i} className="log-entry">
+                <span className="log-time">{entry.time}</span>
+                <span className="log-msg">{entry.message}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

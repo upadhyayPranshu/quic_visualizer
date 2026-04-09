@@ -10,7 +10,7 @@ function App() {
         <div>
           <div className="app-title">🚀 QUIC Visualizer</div>
           <div className="app-subtitle">
-            Live UDP Packet Simulation · Congestion Control · Network Metrics
+            Custom Reliable Data Transfer Protocol over UDP · Sliding Window · Congestion Control · Error Detection
           </div>
         </div>
       </header>
