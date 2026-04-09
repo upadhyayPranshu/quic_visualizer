@@ -12,6 +12,10 @@ PORT = 9999
 # How long to wait for an ACK before considering the packet lost (seconds)
 ACK_TIMEOUT = 1.0
 
+# Maximum consecutive send failures before backing off
+MAX_CONSECUTIVE_FAILURES = 5
+FAILURE_BACKOFF_SECONDS = 5.0
+
 async def start_client():
     """
     UDP Sender (Client).
@@ -22,15 +26,22 @@ async def start_client():
       - Timeout-based retransmission: re-sends timed-out unacked packets
       - Congestion control: TCP Reno slow-start + congestion avoidance
       - Broadcast: sends send/retransmit/metrics events to WebSocket dashboard
+      - Graceful degradation: backs off when UDP is unavailable (e.g. on Railway)
     """
     loop = asyncio.get_event_loop()
 
     # Client socket — unbound, OS assigns an ephemeral port
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setblocking(False)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setblocking(False)
+    except Exception as e:
+        print(f"[CLIENT] Failed to create UDP socket: {e}")
+        print("[CLIENT] UDP simulation disabled — WebSocket API still works")
+        return
 
     seq = 1
     unacked: dict[int, Packet] = {}   # seq -> Packet (window buffer)
+    consecutive_failures = 0
 
     metrics = Metrics()
     congestion = CongestionControl()
@@ -46,6 +57,13 @@ async def start_client():
             await asyncio.sleep(0.2)
             continue
 
+        # ──────────────────────────────────────────
+        # BACKOFF: if UDP is consistently failing, slow down
+        # ──────────────────────────────────────────
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            await asyncio.sleep(FAILURE_BACKOFF_SECONDS)
+            consecutive_failures = 0  # Reset and retry
+
         cwnd_int = max(1, int(congestion.cwnd))
 
         # ──────────────────────────────────────────
@@ -55,14 +73,19 @@ async def start_client():
         for tseq in timed_out_seqs:
             if tseq in unacked:
                 packet = unacked[tseq]
-                print(f"[CLIENT] Retransmitting packet #{tseq} 🔄")
 
                 try:
                     await loop.sock_sendto(
                         sock, packet.to_json().encode(), (HOST, PORT)
                     )
+                    consecutive_failures = 0
+                    print(f"[CLIENT] Retransmitting packet #{tseq} 🔄")
                 except Exception as e:
-                    print(f"[CLIENT] Retransmit send error #{tseq}: {e}")
+                    consecutive_failures += 1
+                    if consecutive_failures <= 3:
+                        print(f"[CLIENT] Retransmit send error #{tseq}: {e}")
+                    elif consecutive_failures == MAX_CONSECUTIVE_FAILURES:
+                        print(f"[CLIENT] UDP sends failing repeatedly, backing off...")
                     continue
 
                 reliability.on_retransmit(tseq)
@@ -95,8 +118,13 @@ async def start_client():
                 await loop.sock_sendto(
                     sock, packet.to_json().encode(), (HOST, PORT)
                 )
+                consecutive_failures = 0
             except Exception as e:
-                print(f"[CLIENT] Send error #{seq}: {e}")
+                consecutive_failures += 1
+                if consecutive_failures <= 3:
+                    print(f"[CLIENT] Send error #{seq}: {e}")
+                elif consecutive_failures == MAX_CONSECUTIVE_FAILURES:
+                    print(f"[CLIENT] UDP sends failing repeatedly, backing off...")
                 seq += 1
                 continue
 
