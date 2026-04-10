@@ -182,7 +182,7 @@ In essence, QUIC re-implements many of TCP's reliability features (sequencing, a
    ═══════════════════════════════════════════════════════════════ */
 const videoData = {
   title: "QUIC Protocol Explained — Video",
-  embedId: "1F56p0-1k6c",   // "HOW QUIC WORKS" — Chris Greer (Wireshark-based analysis)
+  embedId: "HnDsMehSSY4",   // QUIC protocol explained
   description:
     'This video provides a clear, in-depth explanation of QUIC — how it works over UDP, its handshake mechanism, built-in encryption, stream multiplexing, and how it powers HTTP/3.',
 };
