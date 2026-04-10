@@ -3,6 +3,7 @@ import { connectWebSocket } from "../services/websocket";
 import PacketFlow from "./PacketFlow";
 import Graphs from "./Graphs";
 import Controls from "./Controls";
+import ConceptSection from "./ConceptSection";
 
 const MAX_PACKETS = 24;   // Number of packets to show in the flow lane
 const MAX_METRICS = 60;   // Number of data-points to keep in graphs
@@ -232,6 +233,9 @@ function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* ── Concept Description · Video · References ────────── */}
+      <ConceptSection />
     </div>
   );
 }
