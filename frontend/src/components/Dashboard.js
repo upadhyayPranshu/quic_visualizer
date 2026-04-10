@@ -52,7 +52,9 @@ function Dashboard() {
         seq: s,
         status: info.status,
         checksum_ok: info.checksum_ok !== undefined ? info.checksum_ok : true,
+        checksum: info.checksum || null,
         protocol: info.protocol || "",
+        reason: info.reason || "",
       }));
     });
   }, []);
@@ -75,12 +77,14 @@ function Dashboard() {
           case "send":
             updatePacketStatus(data.seq, "sent", {
               checksum_ok: data.checksum_ok,
+              checksum: data.checksum,
             });
             break;
 
           case "receive":
             updatePacketStatus(data.seq, "received", {
               checksum_ok: data.checksum_ok,
+              checksum: data.checksum,
             });
             break;
 
@@ -94,6 +98,7 @@ function Dashboard() {
           case "retransmit":
             updatePacketStatus(data.seq, "retransmit", {
               checksum_ok: data.checksum_ok,
+              checksum: data.checksum,
               protocol: data.protocol,
             });
             break;
