@@ -1,106 +1,115 @@
-================================================================================
-          QUIC VISUALIZER: CUSTOM RELIABLE DATA TRANSFER OVER UDP
-================================================================================
+🚀 QUIC Visualizer: Custom Reliable Data Transfer over UDP
+⭐⭐ DEVELOPED UNDER SWAMINATHAN A ⭐⭐
+👥 Team: Shamsheri Sultans
 
-TEAM: Shamsheri Sultans
-MEMBERS:
-1. Pranshu Upadhyay (24BRS1241) - Protocol design, Sender implementation, Sliding window logic, Performance analysis
-2. Niranjan N (24BYB1051) - Receiver implementation, Packet loss simulator, GUI dashboard, Testing & Documentation
+Members:
 
-================================================================================
-1. WHAT WE HAVE DONE
-================================================================================
-We have designed and implemented a Custom Reliable Data Transfer Protocol built
-on top of User Datagram Protocol (UDP). Because UDP is inherently unreliable, we
-manually added mechanics commonly found in Transmission Control Protocol (TCP) 
-to ensure safe, ordered, and error-free data delivery.
+Pranshu Upadhyay (24BRS1241)
+Protocol Design, Sender Implementation, Sliding Window Logic, Performance Analysis
+Niranjan N (24BYB1051)
+Receiver Implementation, Packet Loss Simulator, GUI Dashboard, Testing & Documentation
+📌 1. What We Have Done
 
-On top of the protocol engine, we built a real-time GUI Dashboard (quicvisual.netlify.app)
-that visually demonstrates the inner workings of the network. The dashboard shows
-live packet flows, network metrics (RTT, throughput, loss), and allows the user
-to interactively change network conditions like packet loss and connection speed.
+We have designed and implemented a Custom Reliable Data Transfer Protocol built on top of the User Datagram Protocol (UDP).
 
-Key features implemented:
-- Configurable Sliding Window (Controls how much data is sent at once)
-- Congestion Control (TCP Reno style slow-start and additive increase/multiplicative decrease)
-- Two recovery protocols: Go-Back-N and Selective Repeat
-- Error Detection using CRC32 Checksums (simulating packet corruption)
-- Configurable ACK Timeouts
-- Live transmission logs and graphical performance analysis charts
+Since UDP is inherently unreliable, we manually incorporated mechanisms inspired by the Transmission Control Protocol (TCP) to ensure:
 
-================================================================================
-2. HOW WE HAVE DONE IT (ARCHITECTURE & TECH STACK)
-================================================================================
-The project uses a split Client-Server architecture, but due to cloud hosting 
-limitations (Railway does not support UDP traffic routing), we engineered a 
-"Virtual In-Memory Simulator" that identically replicates UDP socket behavior 
-for the backend.
+Reliable data delivery
+Ordered packet transmission
+Error detection and recovery
 
-Technologies Used:
-- Python (FastAPI): Powers the backend server and handles the protocol simulation logic.
-- WebSockets: Maintains a persistent, two-way connection between the backend and 
-  frontend to stream live simulation data instantly.
-- React.js: Powers the interactive frontend user interface.
-- Recharts: Used for rendering the real-time performance graphs.
+On top of the protocol engine, we developed a real-time GUI dashboard:
+👉 https://quicvisual.netlify.app
 
-How it works:
-1. The Backend runs the simulation loop. It generates "Packets", calculates RTT, 
-   detects timeouts, and manages the congestion window.
-2. For every event (a packet sent, received, lost, or corrupted), it fires a 
-   WebSocket message to the frontend.
-3. The Frontend consumes these WebSocket messages and updates the UI state, moving
-   the packet chips across the screen and plotting the data on the graphs.
+This dashboard visually demonstrates:
 
-================================================================================
-3. WHY WE HAVE DONE IT (MOTIVATION)
-================================================================================
-TCP is highly complex and its inner workings are hidden deep inside the Operating 
-System kernel. When studying Computer Networks, it is difficult to "see" how 
-sliding windows and congestion control actually behave in real-time.
+Live packet flow across the network
+Real-time metrics such as RTT, throughput, and packet loss
+Interactive controls to simulate different network conditions
+🔑 Key Features
+Configurable Sliding Window
+TCP Reno-style Congestion Control
+Slow Start
+Additive Increase / Multiplicative Decrease (AIMD)
+Two recovery protocols:
+Go-Back-N
+Selective Repeat
+Error detection using CRC32 Checksums
+Configurable ACK timeout handling
+Real-time transmission logs
+Live graphical performance analysis
+🛠️ 2. How We Have Done It (Architecture & Tech Stack)
+🧩 Architecture Overview
 
-By building reliability on top of UDP from scratch, we bridge the gap between 
-theoretical networking concepts and practical implementation. It allows us (and 
-any user) to directly observe the impact of packet loss, see the difference 
-between Go-Back-N and Selective Repeat, and watch how congestion windows expand 
-and collapse dynamically.
+The system follows a Client-Server architecture. However, due to cloud hosting limitations (Railway does not support UDP traffic routing), we implemented a:
 
-================================================================================
-4. TERMINOLOGY EXPLAINED
-================================================================================
-Below is a detailed breakdown of all networking terms used in this project:
+➡️ Virtual In-Memory UDP Simulator
 
-# PROTOCOLS
-- UDP (User Datagram Protocol): A lightweight network protocol that sends data 
-  fast but does not guarantee it will arrive, arrive in order, or arrive uncorrupted.
-- TCP (Transmission Control Protocol): A heavy, reliable protocol that guarantees 
-  data delivery via acknowledgments and retransmissions. Our project replicates 
-  TCP's reliability over UDP.
+This simulator faithfully replicates real UDP socket behavior within the backend environment.
 
-# RELIABILITY MECHANICS
-- ACK (Acknowledgment): A small message sent by the receiver back to the sender 
-  saying "I successfully received packet #X".
-- Timeout: The amount of time the sender waits for an ACK before assuming the 
-  packet was lost and deciding to retransmit it.
-- Checksum (CRC32): A mathematical value calculated based on the packet's data. 
-  The receiver recalculates it; if it doesn't match the sender's checksum, the 
-  packet was corrupted during transit.
-- Retransmission: Sending a packet again because it was lost or corrupted.
+💻 Technologies Used
+Python (FastAPI) → Backend simulation and protocol logic
+WebSockets → Real-time bidirectional communication
+React.js → Interactive frontend interface
+Recharts → Visualization of performance metrics
+⚙️ System Workflow
+The backend simulation engine:
+Generates packets
+Computes RTT
+Detects timeouts
+Adjusts congestion window dynamically
+For every network event (send, receive, loss, corruption):
+A WebSocket message is sent to the frontend
+The frontend dashboard:
+Animates packet movement
+Updates graphs in real time
+Displays logs and performance statistics
+🎯 3. Why We Have Done It (Motivation)
 
-# SLIDING WINDOW & CONGESTION
-- Sliding Window: A mechanism that allows the sender to transmit multiple packets 
-  before waiting for an ACK. It "slides" forward as ACKs are received.
-- Window Size: The maximum number of unacknowledged packets allowed in transit.
-- Congestion Control: Algorithms used to prevent a sender from overwhelming the 
-  network. It slowly increases the sending rate and drastically cuts it when 
-  packet loss is detected.
-- Go-Back-N: A protocol where if packet #5 is lost, but #6 and #7 arrive safely, 
-  the receiver discards #6 and #7. The sender must "go back" and retransmit #5, #6, and #7.
-- Selective Repeat: A more efficient protocol. If packet #5 is lost, the receiver 
-  still buffers #6 and #7. The sender only retransmits the specific lost packet (#5).
+The internal working of TCP is hidden deep within the Operating System kernel, making it difficult to visualize and understand.
 
-# METRICS
-- RTT (Round Trip Time): The time it takes in milliseconds for a packet to reach 
-  the receiver and for its ACK to return to the sender.
-- Throughput: The amount of successful data delivered per second (measured in pkts/s).
-- Packet Loss Rate: The percentage of packets that fail to reach the destination 
-  due to network congestion or simulated drops.
+This project aims to:
+
+Bridge the gap between theory and implementation
+Provide an interactive learning tool
+Help users observe real-time behavior of:
+Sliding window protocols
+Congestion control mechanisms
+Packet loss and recovery strategies
+
+By building reliability over UDP from scratch, users can clearly understand how modern network protocols operate.
+
+📚 4. Terminology Explained
+🌐 Protocols
+UDP (User Datagram Protocol):
+A fast, connectionless protocol that does not guarantee delivery, order, or integrity
+TCP (Transmission Control Protocol):
+A reliable protocol that ensures data delivery using acknowledgments and retransmissions
+🔁 Reliability Mechanics
+ACK (Acknowledgment):
+A message sent by the receiver confirming successful receipt of a packet
+Timeout:
+The time duration the sender waits before retransmitting a packet
+Checksum (CRC32):
+A computed value used to detect data corruption
+Retransmission:
+Resending packets that were lost or corrupted
+📦 Sliding Window & Congestion Control
+Sliding Window:
+Allows multiple packets to be sent before waiting for acknowledgments
+Window Size:
+Maximum number of unacknowledged packets allowed in transit
+Congestion Control:
+Mechanisms to prevent network overload by adjusting transmission rate
+🔄 Protocol Types
+Go-Back-N:
+If one packet is lost, all subsequent packets are retransmitted
+Selective Repeat:
+Only the lost packet is retransmitted while others are buffered
+📊 Metrics
+RTT (Round Trip Time):
+Time taken for a packet to travel to the receiver and back
+Throughput:
+Number of successfully delivered packets per second
+Packet Loss Rate:
+Percentage of packets lost during transmission
